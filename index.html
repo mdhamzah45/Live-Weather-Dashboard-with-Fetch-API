@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Responsive pricing cards with a monthly/yearly billing toggle and highlighted popular plan."
+      content="Live weather dashboard with city search, forecast, and friendly error handling."
     />
-    <title>Pricing Plans</title>
+    <title>Weather Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,96 +17,30 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="pricing-page">
-      <section class="pricing-section" aria-labelledby="pricing-heading">
-        <header class="pricing-header">
-          <p class="eyebrow">Simple pricing</p>
-          <h1 id="pricing-heading">Choose the plan that fits your workflow</h1>
+    <main class="dashboard-shell">
+      <section class="weather-app" aria-labelledby="weather-heading">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Weather tracker</p>
+            <h1 id="weather-heading">Forecast at a glance</h1>
+          </div>
         </header>
 
-        <div class="billing-toggle" aria-label="Billing toggle">
-          <button class="toggle-btn active" type="button" data-billing="monthly" aria-pressed="true">
-            Monthly
-          </button>
-          <button class="toggle-btn" type="button" data-billing="yearly" aria-pressed="false">
-            Yearly
-          </button>
-        </div>
+        <form id="search-form" class="search-form" novalidate>
+          <label class="sr-only" for="city-input">Search city</label>
+          <input
+            id="city-input"
+            type="text"
+            name="city"
+            placeholder="Search for a city"
+            autocomplete="off"
+          />
+          <button type="submit">Search</button>
+        </form>
 
-        <div class="pricing-grid">
-          <article class="plan-card" data-monthly="19" data-yearly="15" aria-label="Starter plan">
-            <div class="plan-header">
-              <h2>Starter</h2>
-              <p class="plan-subtitle">For individuals</p>
-            </div>
+        <p id="status-message" class="status-message" aria-live="polite"></p>
 
-            <div class="price-block">
-              <span class="currency">$</span>
-              <span class="price-value">19</span>
-              <span class="billing-label">/mo</span>
-            </div>
-
-            <p class="discount-note">Billed monthly</p>
-
-            <ul class="feature-list">
-              <li>Up to 3 active projects</li>
-              <li>Unlimited tasks</li>
-              <li>Email support</li>
-              <li>Basic analytics</li>
-            </ul>
-
-            <button class="plan-button" type="button">Get started</button>
-          </article>
-
-          <article class="plan-card popular" data-monthly="39" data-yearly="31" aria-label="Popular plan">
-            <span class="badge">Popular</span>
-            <div class="plan-header">
-              <h2>Pro</h2>
-              <p class="plan-subtitle">For growing teams</p>
-            </div>
-
-            <div class="price-block">
-              <span class="currency">$</span>
-              <span class="price-value">39</span>
-              <span class="billing-label">/mo</span>
-            </div>
-
-            <p class="discount-note">Save 20% with yearly billing</p>
-
-            <ul class="feature-list">
-              <li>Unlimited projects</li>
-              <li>Team collaboration</li>
-              <li>Priority support</li>
-              <li>Advanced reports</li>
-            </ul>
-
-            <button class="plan-button primary" type="button">Start free trial</button>
-          </article>
-
-          <article class="plan-card" data-monthly="79" data-yearly="63" aria-label="Scale plan">
-            <div class="plan-header">
-              <h2>Scale</h2>
-              <p class="plan-subtitle">For larger businesses</p>
-            </div>
-
-            <div class="price-block">
-              <span class="currency">$</span>
-              <span class="price-value">79</span>
-              <span class="billing-label">/mo</span>
-            </div>
-
-            <p class="discount-note">Billed monthly</p>
-
-            <ul class="feature-list">
-              <li>Custom permissions</li>
-              <li>Dedicated onboarding</li>
-              <li>SSO and security</li>
-              <li>Custom integrations</li>
-            </ul>
-
-            <button class="plan-button" type="button">Contact sales</button>
-          </article>
-        </div>
+        <section id="weather-content" class="weather-content hidden" aria-live="polite"></section>
       </section>
     </main>
 
