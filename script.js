@@ -1,5 +1,5 @@
-const API_KEY = 'f8f5328d659e4e9342a7d7c44d4b1db6';
-const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+const BASE_URL = 'https://geocoding-api.open-meteo.com/v1';
+const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 
 const weatherContent = document.getElementById('weather-content');
 const searchForm = document.getElementById('search-form');
@@ -31,34 +31,29 @@ function renderWeather(data) {
   const current = data.current;
   const daily = data.daily.slice(0, 5);
 
-  const currentTemp = Math.round(current.temp - 273.15);
-  const feelsLike = Math.round(current.feels_like - 273.15);
-  const humidity = current.humidity;
-  const wind = Math.round(current.wind_speed * 3.6);
-
   weatherContent.innerHTML = `
     <div class="current-weather">
       <div>
         <h2 class="city-name">${data.city}</h2>
         <div class="temp-row">
-          <strong>${currentTemp}°C</strong>
-          <span>${getWeatherIcon(current.weather[0].id)}</span>
+          <strong>${Math.round(current.temperature)}°C</strong>
+          <span>${getWeatherIcon(current.weathercode)}</span>
         </div>
-        <p class="forecast-summary">${current.weather[0].description}</p>
+        <p class="forecast-summary">${data.description}</p>
       </div>
 
       <div class="weather-meta">
         <div class="meta-box">
           <p>Feels like</p>
-          <strong>${feelsLike}°C</strong>
+          <strong>${Math.round(current.apparent_temperature)}°C</strong>
         </div>
         <div class="meta-box">
           <p>Humidity</p>
-          <strong>${humidity}%</strong>
+          <strong>${current.relative_humidity_2m}%</strong>
         </div>
         <div class="meta-box">
           <p>Wind</p>
-          <strong>${wind} km/h</strong>
+          <strong>${Math.round(current.wind_speed_10m)} km/h</strong>
         </div>
       </div>
     </div>
@@ -66,12 +61,12 @@ function renderWeather(data) {
     <div class="forecast-grid">
       ${daily
         .map((day) => {
-          const high = Math.round(day.temp.max - 273.15);
-          const low = Math.round(day.temp.min - 273.15);
+          const high = Math.round(day.temperature_2m_max);
+          const low = Math.round(day.temperature_2m_min);
           return `
             <article class="forecast-card">
-              <p class="day">${formatDay(day.dt * 1000)}</p>
-              <p class="icon">${getWeatherIcon(day.weather[0].id)}</p>
+              <p class="day">${formatDay(day.time)}</p>
+              <p class="icon">${getWeatherIcon(day.weathercode)}</p>
               <p class="forecast-temp">${high}° / ${low}°</p>
             </article>
           `;
@@ -84,9 +79,9 @@ function renderWeather(data) {
 }
 
 async function fetchWeather(city) {
-  const encodedCity = encodeURIComponent(city.trim());
+  const trimmedCity = city.trim();
 
-  if (!encodedCity) {
+  if (!trimmedCity) {
     setStatus('Please enter a city name.', true);
     return;
   }
@@ -95,17 +90,23 @@ async function fetchWeather(city) {
 
   try {
     const geoResponse = await fetch(
-      `${BASE_URL}/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`
+      `${BASE_URL}/search?name=${encodeURIComponent(trimmedCity)}&count=1&language=en&format=json`
     );
 
     if (!geoResponse.ok) {
-      throw new Error('City not found. Please try another location.');
+      throw new Error('Could not connect to the weather service.');
     }
 
     const geoData = await geoResponse.json();
 
+    if (!geoData.results || geoData.results.length === 0) {
+      throw new Error('City not found. Please try another location.');
+    }
+
+    const location = geoData.results[0];
+
     const forecastResponse = await fetch(
-      `${BASE_URL}/onecall?lat=${geoData.coord.lat}&lon=${geoData.coord.lon}&exclude=minutely,hourly,alerts&appid=${API_KEY}&units=metric`
+      `${FORECAST_URL}?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`
     );
 
     if (!forecastResponse.ok) {
@@ -113,18 +114,35 @@ async function fetchWeather(city) {
     }
 
     const forecastData = await forecastResponse.json();
+
     const data = {
-      city: geoData.name,
+      city: `${location.name}${location.country ? ', ' + location.country : ''}`,
       current: forecastData.current,
-      daily: forecastData.daily,
+      daily: forecastData.daily.time.map((time, index) => ({
+        time,
+        weathercode: forecastData.daily.weathercode[index],
+        temperature_2m_max: forecastData.daily.temperature_2m_max[index],
+        temperature_2m_min: forecastData.daily.temperature_2m_min[index],
+      })),
+      description: getWeatherDescription(forecastData.current.weathercode),
     };
 
     renderWeather(data);
-    setStatus(`Showing weather for ${geoData.name}.`);
+    setStatus(`Showing weather for ${data.city}.`);
   } catch (error) {
     weatherContent.classList.add('hidden');
     setStatus(error.message || 'Something went wrong. Please try again.', true);
   }
+}
+
+function getWeatherDescription(code) {
+  if (code >= 200 && code < 300) return 'Thunderstorms';
+  if (code >= 300 && code < 400) return 'Light rain';
+  if (code >= 500 && code < 600) return 'Rain';
+  if (code >= 600 && code < 700) return 'Snow';
+  if (code >= 700 && code < 800) return 'Foggy';
+  if (code === 800) return 'Clear sky';
+  return 'Cloudy';
 }
 
 searchForm.addEventListener('submit', (event) => {
